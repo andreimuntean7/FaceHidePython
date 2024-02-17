@@ -7,6 +7,8 @@ import cv2
 image = None
 original_photo = None
 transformed_photo = None
+video = None
+delay = 100  # Delay in milliseconds
 
 
 def select_file():
@@ -15,6 +17,13 @@ def select_file():
     image = Image.open(filepath)
     original_photo = ImageTk.PhotoImage(image=image)
     show_image()
+
+
+def select_video():
+    global video
+    filepath = fd.askopenfilename()
+    video = cv2.VideoCapture(filepath)
+    show_video()
 
 
 def transform_img():
@@ -49,13 +58,46 @@ def show_image():
             canvas.create_image(0, 0, image=original_photo, anchor="nw")
 
 
+def blur_faces(frame):
+    """Apply blur effect to detected faces."""
+    face_cascade = cv2.CascadeClassifier("./haarcascade_frontalface_alt.xml")
+    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray_frame, 1.3, 5)
+    for x, y, w, h in faces:
+        roi = frame[y : y + h, x : x + w]
+        blurred_roi = cv2.GaussianBlur(roi, (23, 23), 30)
+        frame[y : y + blurred_roi.shape[0], x : x + blurred_roi.shape[1]] = blurred_roi
+    return frame
+
+
+def show_video():
+    global canvas, video
+    width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    canvas.config(width=width, height=height)
+
+    ret, frame = video.read()
+    if ret:
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame = blur_faces(frame)  # Blur faces
+        photo = ImageTk.PhotoImage(image=Image.fromarray(frame))
+        canvas.create_image(0, 0, image=photo, anchor="nw")
+        canvas.photo = photo  # To prevent garbage collection of photo object
+        canvas.after(delay, show_video)  # Update video after 'delay' milliseconds
+    else:
+        video.release()  # Release video capture object when video ends
+
+
 root = tk.Tk()
 
-open_button = tk.Button(root, text="Open", command=select_file)
+open_button = tk.Button(root, text="Open Image", command=select_file)
 open_button.pack()
 
 remove_faces_button = tk.Button(root, text="Remove Faces", command=transform_img)
 remove_faces_button.pack()
+
+open_video_button = tk.Button(root, text="Open Video", command=select_video)
+open_video_button.pack()
 
 canvas = tk.Canvas(root)
 canvas.pack()
