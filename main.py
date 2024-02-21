@@ -88,6 +88,34 @@ def show_video():
         video.release()  # Release video capture object when video ends
 
 
+def save_image():
+    global canvas
+    filename = fd.asksaveasfilename(
+        defaultextension=".png",
+        filetypes=[
+            ("PNG files", "*.png"),
+            ("JPEG files", "*.jpg"),
+            ("All files", "*.*"),
+        ],
+    )
+    if filename:
+        file_format = filename.split(".")[-1]  # Obține extensia fișierului
+        if file_format.lower() == "png":
+            canvas.postscript(file=filename + ".ps", colormode="color")
+            img = Image.open(filename + ".ps")
+            img.save(filename, format="PNG")  # Salvează imaginea în format PNG
+        elif file_format.lower() == "jpg" or file_format.lower() == "jpeg":
+            canvas.postscript(file=filename + ".ps", colormode="color")
+            img = Image.open(filename + ".ps")
+            img.save(filename, format="JPEG")  # Salvează imaginea în format JPEG
+        else:
+            canvas.postscript(file=filename + ".ps", colormode="color")
+            img = Image.open(filename + ".ps")
+            img.save(
+                filename + ".png", format="PNG"
+            )  # Dacă extensia nu este specificată sau nu este PNG sau JPEG, se va salva ca PNG implicit
+
+
 root = tk.Tk()
 
 open_button = tk.Button(root, text="Open Image", command=select_file)
@@ -98,6 +126,9 @@ remove_faces_button.pack()
 
 open_video_button = tk.Button(root, text="Open Video", command=select_video)
 open_video_button.pack()
+
+save_button = tk.Button(root, text="Save Image", command=save_image)
+save_button.pack()
 
 canvas = tk.Canvas(root)
 canvas.pack()
